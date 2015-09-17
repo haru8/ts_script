@@ -7,6 +7,9 @@ FFMPEG='/usr/local/bin/ffmpeg'
 THUMB_S='288x162'
 THUMB_L='1280x720'
 
+FILEBODY=`basename $INFILE | sed 's/\.[^.]*$//'`
+INDIR=`dirname $INFILE`
+
 movie_sec () {
 	local file="$1"
 	local time_s
@@ -45,6 +48,10 @@ NUMS=$PLAYSEC/$STEP
 echo "PLAYSEC=$PLAYSEC  NUMS=$NUMS"
 
 RETVAL1=0
+
+$FFMPEG -y -loglevel quiet -ss 80 -i "$INFILE" -vframes 1 -s 160x120 -f image2 "${FILEBODY}.jpg"
+mv "${FILEBODY}.jpg" "${FILEBODY}.THM"
+
 while [ $RETVAL1 = 0 ]; do
   NUM_S=`perl -e "printf('%08d', $NUM)"`
   TIME=`perl -e "printf(\"%02d:%02d:%02d\", int($SEC/3600), int($SEC/60), $SEC%60);"`
