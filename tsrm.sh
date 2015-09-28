@@ -74,7 +74,7 @@ audio_stream_count () {
 }
 
 # 引数のチェック
-if [ $# = 1 ] ; then
+if [ $# -ge 1 ] ; then
 	if [ $1 = '-t' ] ; then
 		TESTMODE=1
 		TESTTXT="TEST MODE"
