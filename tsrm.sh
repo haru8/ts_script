@@ -97,6 +97,9 @@ else
 	TS=`find $TSPATH -maxdepth 1 -name '*.m2t' -type f -size +1k -mtime +$DAYS | xargs ls -1tr /dev/null | grep -v /dev/null`
 fi
 
+DELETETOTAL=0
+NOTDELETETOTAL=0
+
 for file in $TS; do
 	MP4FOUND=-1
 	MP4SIZERATE=-1
@@ -203,9 +206,9 @@ for file in $TS; do
 			FAUDIOST=`printf '%2d' $AUDIOST`
 			FSTREAM=`if [ $STREAM -eq 0 ]; then echo 'OK'; else echo 'NG'; fi`
 		fi
-		#LOG='log_out "$MES $FNAME MP4=$FMP4FOUND SIZEC=$FMP4SIZERATE IMGC=$FIMGCHECK MP4T_RATE=$FMP4TIME_RATE SIZER=$FSIZERATE% MG_COUNT=$FIMG_COUNT TST=${FTSTIME}s MP4T=${FMP4TIME}s T_RATE=$FTIME_RATE% VST=$FVIDEOST AST=$FAUDIOST"'
 		LOG='log_out "$MES $FNAME MP4=$FMP4FOUND SIZE=$FMP4SIZERATE:[ MP4=${FMP4SIZE}MB TS=${FM2TSIZE}GB R=${FSIZERATE}% ] TIME=$FMP4TIME_RATE:[ MP4=${FMP4TIME}s TS=${FTSTIME}s R=$FTIME_RATE% ] STREAM=$FSTREAM:[ A=$FAUDIOST V=$FVIDEOST ] THU=$FIMGCHECK:[$FIMG_COUNT]"'
 		if [ $MP4FOUND -eq 0 -a $MP4SIZERATE -eq 0 -a $IMGCHECK -eq 0 -a $MP4TIME_RATE -eq 0 -a $VIDEO -eq 0 -a $AUDIO -eq 0 ]; then 
+			DELETETOTAL=`expr $DELETETOTAL + $M2TSIZE`
 			MES=`printf '%-11s' 'delete.'`
 			eval $LOG
 			if [ $TESTMODE -eq 0 ]; then
@@ -221,6 +224,7 @@ for file in $TS; do
 				fi
 			fi
 		else
+			NOTDELETETOTAL=`expr $NOTDELETETOTAL + $M2TSIZE`
 			MES=`printf '%-11s' 'not delete.'`
 			eval $LOG
 		fi
@@ -246,6 +250,12 @@ fi
 
 AFTERDF=`df -h $TSPATH`
 
+FDELETETOTAL=`perl -e "printf('%- 8.2fGB', $DELETETOTAL/1024/1024/1024)"`
+FNOTDELETETOTAL=`perl -e "printf('%- 8.2fGB', $NOTDELETETOTAL/1024/1024/1024)"`
+
+log_out ""
+log_out "     DELETE TOTAL : $FDELETETOTAL"
+log_out "  NOTDELETE TOTAL : $FNOTDELETETOTAL"
 log_out ""
 log_out "===== BEFORE DF ====="
 log_out "$BEFOREDF"
