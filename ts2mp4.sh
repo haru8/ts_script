@@ -175,7 +175,7 @@ captureimage () {
 	local base=`dirname $infile`
 	local outdir="${base}/${FILEBODY}_img"
 	local -i num=0
-	local -i sec=0
+	local -i sec=1
 	local -i step=10
 	local num_s=""
 
@@ -190,12 +190,16 @@ captureimage () {
 
 	while [ $retval = 0 ];do
 		num_s=`perl -e "printf('%08d', $num)"`
-		nice -n 15 $FFMPEG -loglevel quiet -ss $sec -y -i "$infile" -vframes 1 -s $THUMB_S -f image2 "${outdir}/${num_s}.jpg"
-		nice -n 15 $FFMPEG -loglevel quiet -ss $sec -y -i "$infile" -vframes 1 -s $THUMB_L -f image2 "${outdir}/l/${num_s}.jpg"
+		CMD1="nice -n 5 $FFMPEG -loglevel quiet -ss $sec -y -i \"$infile\" -vframes 1 -s $THUMB_S -f image2 \"${outdir}/${num_s}.jpg\""
+		CMD2="nice -n 5 $FFMPEG -loglevel quiet -ss $sec -y -i \"$infile\" -vframes 1 -s $THUMB_L -f image2 \"${outdir}/l/${num_s}.jpg\""
+		#log_out $CMD1
+		eval $CMD1
+		#log_out $CMD2
+		eval $CMD2
 		retval=$?
 
 		# ファイルが出来ていなかったら動画の末尾まで到達したと判定
-		if [ ! -e "${outdir}/${num_s}.jpg" ]; then
+		if [ $num -gt 6 -a ! -e "${outdir}/${num_s}.jpg" ]; then
 			break
 		fi
 		num=$num+1
@@ -237,6 +241,7 @@ if [ ! -w "$SRCDIR" ]; then
 fi
 
 # BonTsDemux 実行
+SPSTARTDATE=`date '+%Y/%m/%d %H:%M:%S'`
 if [ $SPLITOFF -ne 1 ]; then
   if [ -x "$BONTSDEMUX" ]; then
     SPOUT="${FILEBODY}_dem"
@@ -377,7 +382,9 @@ fi
 #	SSTIME=' -ss 00:00:02.000 '
 #	log_out "SPLITOFF = $SPLITOFF, Split OFF."
 #fi
+SPENDDATE=`date '+%Y/%m/%d %H:%M:%S'`
 log_out "SPLITFILE = $SPLITFILE"
+
 
 #CROPOPT=' -vf crop=in_w-16:in_h-12:8:6 '
 #FFMPEGOPT=" -threads 0 -s 640x352 -r 29.97 -vcodec libx264 -preset medium -g 100 -crf 21 -bufsize 768k -maxrate 700k -level 30 -sc_threshold 60 -refs 3 -async 50 -f h264 ${SRCDIR}/${FILEBODY}.264"
@@ -412,6 +419,7 @@ BENCH=" -ssim 1 -benchmark "
 FFMPEGOPT=" $RESOLUTION -r 30000/1001 -vcodec libx264 $PRESET $TUNE -g 250 $CRF $MAXRATE $REFS  $QCOMP $X264OPTS $BENCH -async 50 -vsync 1 -f h264 ${SRCDIR}/${FILEBODY}.264"
 
 # H.264 エンコード開始
+ENCSTARTDATE=`date '+%Y/%m/%d %H:%M:%S'`
 log_out "ffmpeg $SPLITFILE 264 start."
 log_out "$FFMPEG -y -i $SPLITFILE $CROPOPT $SSTIME $FFMPEGOPT"
 nice -n 15 $FFMPEG -y -i "$SPLITFILE" $CROPOPT $SSTIME $FFMPEGOPT
@@ -448,8 +456,10 @@ else
 	log_out "H.264 encode file"
 	log_out "`ls -lh ${SRCDIR}/${FILEBODY}.264`"
 fi
+ENCENDDATE=`date '+%Y/%m/%d %H:%M:%S'`
 
 # 存在してたら消す
+AACSTARTDATE=`date '+%Y/%m/%d %H:%M:%S'`
 if [ -e "${SRCDIR}/${FILEBODY}.aac" ]; then
 	rm -f "${SRCDIR}/${FILEBODY}.aac"
 fi
@@ -541,8 +551,10 @@ else
 	log_out "wav -> aac file"
 	log_out "`ls -lh ${SRCDIR}/${FILEBODY}.aac`"
 fi
+AACENDDATE=`date '+%Y/%m/%d %H:%M:%S'`
 
 # MP4 mux 264
+MUXSTARTDATE=`date '+%Y/%m/%d %H:%M:%S'`
 log_out "MP4Box -add 264 -new ${SRCDIR}/${FILEBODY}.base.mp4  start."
 log_out "$MP4BOX -tmp /tmp -fps 29.97 -add ${SRCDIR}/${FILEBODY}.264 -new ${SRCDIR}/${FILEBODY}.base.mp4"
 nice -n 15 $MP4BOX -tmp /tmp -fps 29.97 -add "${SRCDIR}/${FILEBODY}.264" -new "${SRCDIR}/${FILEBODY}.base.mp4"
@@ -570,6 +582,7 @@ log_out "MP4Box -ipod ${SRCDIR}/${FILEBODY}.base.mp4"
 log_out "$MP4BOX -tmp /tmp -ipod ${SRCDIR}/${FILEBODY}.base.mp4"
 nice -n 15 $MP4BOX -tmp /tmp -ipod "${SRCDIR}/${FILEBODY}.base.mp4"
 log_out "`ls -lh ${SRCDIR}/${FILEBODY}.base.mp4`"
+MUXENDDATE=`date '+%Y/%m/%d %H:%M:%S'`
 
 # rename  base.mp4 -> .MP4
 if [ -e "${SRCDIR}/${FILEBODY}.MP4" ]; then
@@ -580,13 +593,31 @@ mv "${SRCDIR}/${FILEBODY}.base.mp4" "${SRCDIR}/${FILEBODY}.MP4"
 log_out "`ls -lh ${SRCDIR}/${FILEBODY}.MP4`"
 
 # サムネイル作成
+THUSTARTDATE=`date '+%Y/%m/%d %H:%M:%S'`
 log_out "call captureimage $SPLITFILE"
 captureimage "$SPLITFILE"
+THUENDDATE=`date '+%Y/%m/%d %H:%M:%S'`
 
 # 結果表示
 ENDDATE=`date '+%Y/%m/%d %H:%M:%S'`
 declare -i PROCSEC=`date -d "$ENDDATE" '+%s'`-`date -d "$STARTDATE" '+%s'`
 PROCESS=`perl -e "printf(\"%02d:%02d:%02d\", int($PROCSEC/3600), int($PROCSEC%3600/60), $PROCSEC%60);"`
+
+declare -i SPSEC=`date -d "$SPENDDATE" '+%s'`-`date -d "$SPSTARTDATE" '+%s'`
+SPTIME=`perl -e "printf(\"%02d:%02d:%02d\", int($SPSEC/3600), int($SPSEC%3600/60), $SPSEC%60);"`
+
+declare -i ENCSEC=`date -d "$ENCENDDATE" '+%s'`-`date -d "$ENCSTARTDATE" '+%s'`
+ENCTIME=`perl -e "printf(\"%02d:%02d:%02d\", int($ENCSEC/3600), int($ENCSEC%3600/60), $ENCSEC%60);"`
+
+declare -i AACSEC=`date -d "$AACENDDATE" '+%s'`-`date -d "$AACSTARTDATE" '+%s'`
+AACTIME=`perl -e "printf(\"%02d:%02d:%02d\", int($AACSEC/3600), int($AACSEC%3600/60), $AACSEC%60);"`
+
+declare -i MUXSEC=`date -d "$MUXENDDATE" '+%s'`-`date -d "$MUXSTARTDATE" '+%s'`
+MUXTIME=`perl -e "printf(\"%02d:%02d:%02d\", int($MUXSEC/3600), int($MUXSEC%3600/60), $MUXSEC%60);"`
+
+declare -i THUSEC=`date -d "$THUENDDATE" '+%s'`-`date -d "$THUSTARTDATE" '+%s'`
+THUTIME=`perl -e "printf(\"%02d:%02d:%02d\", int($THUSEC/3600), int($THUSEC%3600/60), $THUSEC%60);"`
+
 
 INFILESIZE=`ls -lh "$INFILE"    | awk {'print $5'}`
 SPFILESIZE=`ls -lh "$SPLITFILE" | awk {'print $5'}`
@@ -616,8 +647,13 @@ log_out "  MP4   FILE      : `printf '%06s' $M4FILESIZE` : ${SRCDIR}/${FILEBODY}
 log_out "  THUMBNAIL DIR   : `printf '%06s' $THMDIRSIZE` : ${THCOUNT} files : ${SRCDIR}/${FILEBODY}_img"
 log_out "  COMPRESSION RATE: `printf '%06s' $COMP`%"
 log_out "  START   TIME    : ${STARTDATE}"
-log_out "  END     TIME    : $ENDDATE"
-log_out "  PROCESS TIME    : $PROCESS"
+log_out "  END     TIME    : ${ENDDATE}"
+log_out "  PROCESS TIME    : ${PROCESS}"
+log_out "    SP TIME       : ${SPTIME}"
+log_out "    ENC TIME      : ${ENCTIME}"
+log_out "    AAC TIME      : ${AACTIME}"
+log_out "    MUX TIME      : ${MUXTIME}"
+log_out "    THU TIME      : ${THUTIME}"
 log_out "=========================== TS to MP4 ENCODE RESULT ==========================="
 log_out ""
 
