@@ -99,6 +99,8 @@ fi
 
 DELETETOTAL=0
 NOTDELETETOTAL=0
+SIZERATESUM=0
+CNT=0
 
 for file in $TS; do
 	MP4FOUND=-1
@@ -202,6 +204,8 @@ for file in $TS; do
 			FMP4TIME=`printf '%4d' $MP4TIME`
 			FSIZERATE=`perl -e "printf("%s", $SIZERATE/10)"`
 			FSIZERATE=`printf '%2.1f' $FSIZERATE`
+			SIZERATESUM=`perl -e "printf("%s", $SIZERATESUM + $FSIZERATE)"`
+			CNT=`expr $CNT + 1`
 			FVIDEOST=`printf '%2d' $VIDEOST`
 			FAUDIOST=`printf '%2d' $AUDIOST`
 			FSTREAM=`if [ $STREAM -eq 0 ]; then echo 'OK'; else echo 'NG'; fi`
@@ -252,10 +256,12 @@ AFTERDF=`df -h $TSPATH`
 
 FDELETETOTAL=`perl -e "printf('%- 8.2fGB', $DELETETOTAL/1024/1024/1024)"`
 FNOTDELETETOTAL=`perl -e "printf('%- 8.2fGB', $NOTDELETETOTAL/1024/1024/1024)"`
+FSIZERATESUM=`perl -e "printf('%- 2.2f%', $SIZERATESUM/$CNT)"`
 
 log_out ""
 log_out "     DELETE TOTAL : $FDELETETOTAL"
 log_out "  NOTDELETE TOTAL : $FNOTDELETETOTAL"
+log_out "  AVERAGE RATE    : $SIZERATESUM / $CNT = $FSIZERATESUM"
 log_out ""
 log_out "===== BEFORE DF ====="
 log_out "$BEFOREDF"
