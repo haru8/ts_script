@@ -5,7 +5,7 @@ TSOLDPATH=/usr/local/apps/foltia/php/tv/zero_m2t
 LOGPATH=/tmp/tsrm.log
 FFMPEG=/usr/local/bin/ffmpeg
 #DAYS=0
-OLDDAYS=186
+OLDDAYS=370
 THRESHOLD_SIZE_RATE=22
 THRESHOLD_TIME_RATE=980
 
@@ -88,6 +88,7 @@ else
 fi
 
 log_out "=============== `date` $TESTTXT start ==============="
+log_out "DAYS=$DAYS"
 log_out ""
 
 BEFOREDF=`df -h $TSPATH`
