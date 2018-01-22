@@ -70,8 +70,8 @@ validationsplitfile () {
         log_out "($spsize / $insize) * 100 = $valid"
 
         # 入力ファイルと比べて小さすぎるならsplitに失敗している
-        if [ $valid -le 50 ]; then
-            log_out "ERR File split may be fail. split file size is under 50%."
+        if [ $valid -le 45 ]; then
+            log_out "ERR File split may be fail. split file size is under 45%."
             rm -f $spfile
             retval=1
         else
@@ -109,18 +109,21 @@ validationsplitfileSD () {
     if [ -e "$sd1file" ]; then
         local -i sd1size=`ls -lk "$sd1file" | awk '{print $5}'`
         log_out "`ls -lh $sd1file`"
+        log_out ""
     else
         local -i sd1size=0
     fi
     if [ -e "$sd2file" ]; then
         local -i sd2size=`ls -lk "$sd2file" | awk '{print $5}'`
         log_out "`ls -lh $sd2file`"
+        log_out ""
     else
         local -i sd2size=0
     fi
     if [ -e "$sd3file" ]; then
         local -i sd3size=`ls -lk "$sd3file" | awk '{print $5}'`
         log_out "`ls -lh $sd3file`"
+        log_out ""
     else
         local -i sd3size=0
     fi
@@ -192,9 +195,11 @@ captureimage () {
         num_s=`perl -e "printf('%08d', $num)"`
         CMD1="nice -n 5 $FFMPEG -loglevel quiet -ss $sec -y -i \"$infile\" -vframes 1 -s $THUMB_S -f image2 \"${outdir}/${num_s}.jpg\""
         CMD2="nice -n 5 $FFMPEG -loglevel quiet -ss $sec -y -i \"$infile\" -vframes 1 -s $THUMB_L -f image2 \"${outdir}/l/${num_s}.jpg\""
+        #CMD1="nice -n 5 $FFMPEG -y -i \"$infile\" -s $THUMB_S -f image2 -vcodec mjpeg -r 0.1 \"${outdir}/%08d.jpg\""
+        #CMD2="nice -n 5 $FFMPEG -y -i \"$infile\" -s $THUMB_L -f image2 -vcodec mjpeg -r 0.1 \"${outdir}/l/%08d.jpg\""
         #log_out $CMD1
-        eval $CMD1
         #log_out $CMD2
+        eval $CMD1
         eval $CMD2
         retval=$?
 
@@ -233,6 +238,7 @@ if [ ! -e "$INFILE" ]; then
 fi
 log_out "input TS file"
 log_out "`ls -lh $INFILE`"
+log_out ""
 
 # TSのディレクトリに書き込めなかったら終わる
 if [ ! -w "$SRCDIR" ]; then
@@ -240,46 +246,46 @@ if [ ! -w "$SRCDIR" ]; then
     exit 3;
 fi
 
-# BonTsDemux 実行
 SPSTARTDATE=`date '+%Y/%m/%d %H:%M:%S'`
-if [ $SPLITOFF -ne 1 ]; then
-  if [ -x "$BONTSDEMUX" ]; then
-    SPOUT="${FILEBODY}_dem"
-    SPM2V="${SRCDIR}/${SPOUT}.m2v"
-    SPWAV="${SRCDIR}/${SPOUT}.wav"
-    # 既に有ったら消しておく
-    if [ -e "$SPM2V" ]; then
-      log_out "rm $SPM2V"
-      rm -f "$SPM2V"
-    fi
-    if [ -e "$SPWAV" ]; then
-      log_out "rm $SPWAV"
-      rm -f "$SPWAV"
-    fi
-    log_out "$BONTSDEMUX $INFILE  start."
-    nice -n 15 wine "$BONTSDEMUX" -i "$INFILE" -o "$SPOUT" -encode "Demux(m2v+wav)" -start -quit -sound 0 -nd
-    RET=$?
-    log_out "$BONTSDEMUX $INFILE  end. :$RET"
-
-    # M2Vが無かったらら終わる
-    if [ -e "$SPM2V" ]; then
-      log_out "split m2v exist."
-      log_out "`ls -lh $SPM2V`"
-      SPLITFILE="$SPM2V"
-    else
-      log_out "split m2v not exist."
-      exit 4
-    fi
-    # WAVが無かったらら終わる
-    if [ -e "$SPWAV" ]; then
-      log_out "split wav exist."
-      log_out "`ls -lh $SPWAV`"
-    else
-      log_out "split wav not exist."
-      exit 5
-    fi
-  fi
-fi
+# BonTsDemux 実行
+#if [ $SPLITOFF -ne 1 ]; then
+#  if [ -x "$BONTSDEMUX" ]; then
+#    SPOUT="${FILEBODY}_dem"
+#    SPM2V="${SRCDIR}/${SPOUT}.m2v"
+#    SPWAV="${SRCDIR}/${SPOUT}.wav"
+#    # 既に有ったら消しておく
+#    if [ -e "$SPM2V" ]; then
+#      log_out "rm $SPM2V"
+#      rm -f "$SPM2V"
+#    fi
+#    if [ -e "$SPWAV" ]; then
+#      log_out "rm $SPWAV"
+#      rm -f "$SPWAV"
+#    fi
+#    log_out "$BONTSDEMUX $INFILE  start."
+#    nice -n 15 wine "$BONTSDEMUX" -i "$INFILE" -o "$SPOUT" -encode "Demux(m2v+wav)" -start -quit -sound 0 -nd
+#    RET=$?
+#    log_out "$BONTSDEMUX $INFILE  end. :$RET"
+#
+#    # M2Vが無かったらら終わる
+#    if [ -e "$SPM2V" ]; then
+#      log_out "split m2v exist."
+#      log_out "`ls -lh $SPM2V`"
+#      SPLITFILE="$SPM2V"
+#    else
+#      log_out "split m2v not exist."
+#      exit 4
+#    fi
+#    # WAVが無かったらら終わる
+#    if [ -e "$SPWAV" ]; then
+#      log_out "split wav exist."
+#      log_out "`ls -lh $SPWAV`"
+#    else
+#      log_out "split wav not exist."
+#      exit 5
+#    fi
+#  fi
+#fi
 
 ## HDのストリームのみ抽出
 #if [ -x "$TSSPY" -a $SPLITOFF -ne 1 ]; then
@@ -321,38 +327,39 @@ fi
 #log_out "call validationsplitfile $INFILE $SPLITFILE"
 #validationsplitfile "$INFILE" "$SPLITFILE"
 #VALID=$?
-#
+
+VALID=1
 ## tss.pyに失敗してたらwineでTsSplit.exe
-#if [ $VALID -ne 0 -a $SPLITOFF -ne 1 ]; then
-#   if [ -e $TSSPLITTER ]; then
-#       log_out "wine $TSSPLITTER -EIT -ECM -EMM -1SEG $INFILE  start."
-#       #wine "$TSSPLITTER" -EIT -ECM -EMM -SD -1SEG "$INFILE"
-#       nice -n 15 wine "$TSSPLITTER" -EIT -ECM -EMM -1SEG "$INFILE"
-#       RET=$?
-#       log_out "$TSSPLITTER  end. :$RET"
-#
-#       if [ -e "${SRCDIR}/${FILEBODY}_HD.m2t" ]; then
-#           SPLITFILE="${SRCDIR}/${FILEBODY}_HD.m2t"
-#           log_out "TsSplit.exe split file"
-#           log_out "`ls -lh $SPLITFILE`"
-#
-#           # splitしたファイルのチェック
-#           log_out "call validationsplitfile $INFILE $SPLITFILE"
-#           validationsplitfile "$INFILE" "$SPLITFILE"
-#           VALID=$?
-#
-#           # ストリームの最初からのはずなので捨てない。
-#           SSTIME=' -ss 00:00:00.000 '
-#       else
-#           log_out "ERR. NOT Exist ${SRCDIR}/${FILEBODY}_SD[123].m2t"
-#           SPLITFILE=""
-#       fi
-#   fi
-#else
-#   # ファイルの最初は不安定なので捨てる
-#   SSTIME=' -ss 00:00:02.000 '
-#fi
-#
+if [ $VALID -ne 0 -a $SPLITOFF -ne 1 ]; then
+   if [ -e $TSSPLITTER ]; then
+       log_out "wine $TSSPLITTER -EIT -ECM -EMM -1SEG $INFILE  start."
+       nice -n 15 wine "$TSSPLITTER" -EIT -ECM -EMM -1SEG "$INFILE"
+       RET=$?
+       log_out "$TSSPLITTER  end. :$RET"
+
+       if [ -e "${SRCDIR}/${FILEBODY}_HD.m2t" ]; then
+           SPLITFILE="${SRCDIR}/${FILEBODY}_HD.m2t"
+           log_out "TsSplit.exe split file"
+           log_out "`ls -lh $SPLITFILE`"
+           log_out ""
+
+           # splitしたファイルのチェック
+           log_out "call validationsplitfile $INFILE $SPLITFILE"
+           validationsplitfile "$INFILE" "$SPLITFILE"
+           VALID=$?
+
+           # ファイルの最初は不安定なので捨てる
+           SSTIME='-ss 00:00:02.000'
+       else
+           log_out "ERR. NOT Exist ${SRCDIR}/${FILEBODY}_SD[123].m2t"
+           SPLITFILE=""
+       fi
+   fi
+else
+   # ファイルの最初は不安定なので捨てる
+   SSTIME='-ss 00:00:02.000'
+fi
+
 ## HDがだめならSDかも
 #if [ $VALID -ne 0 -a $SPLITOFF -ne 1 ]; then
 #   if [ -e "${SRCDIR}/${FILEBODY}_SD1.m2t" -o -e "${SRCDIR}/${FILEBODY}_SD2.m2t" -o -e "${SRCDIR}/${FILEBODY}_SD3.m2t" ]; then
@@ -387,116 +394,116 @@ log_out "SPLITFILE = $SPLITFILE"
 
 
 #CROPOPT=' -vf crop=in_w-16:in_h-12:8:6 '
-#FFMPEGOPT=" -threads 0 -s 640x352 -r 29.97 -vcodec libx264 -preset medium -g 100 -crf 21 -bufsize 768k -maxrate 700k -level 30 -sc_threshold 60 -refs 3 -async 50 -f h264 ${SRCDIR}/${FILEBODY}.264"
-#FFMPEGOPT=" -threads 0 -s 640x352 -r 29.97 -vcodec libx264 -preset slow -g 100 -crf 21 -bufsize 768k -maxrate 700k -level 30 -sc_threshold 60 -refs 3 -async 50 -f h264 ${SRCDIR}/${FILEBODY}.264"
-#FFMPEGOPT=" -threads 0 -s 640x352 -r 29.97 -vcodec libx264 -preset faster -g 100 -crf 25 -bufsize 768k -maxrate 700k -level 30 -sc_threshold 60 -refs 3 -async 50 -f h264 ${SRCDIR}/${FILEBODY}.264"
-#FFMPEGOPT=" -threads 0 -s 640x352 -r 29.97 -vcodec libx264 -preset ultrafast -g 100 -crf 25 -bufsize 768k -maxrate 700k -level 30 -sc_threshold 60 -refs 3 -async 50 -f h264 ${SRCDIR}/${FILEBODY}.264"
-#FFMPEGOPT=" -threads 0 -s 640x352 -r 29.97 -vcodec libx264 -preset fast -g 100 -crf 25 -bufsize 768k -maxrate 768k -level 30 -sc_threshold 60 -refs 3 -async 50 -f h264 ${SRCDIR}/${FILEBODY}.264"
-#FFMPEGOPT=" -threads 0 -s 640x352 -r 29.97 -vcodec libx264 -preset fast -g 100 -crf 21 -bufsize 768k -maxrate 768k -level 30 -sc_threshold 60 -refs 3 -async 50 -f h264 ${SRCDIR}/${FILEBODY}.264"
-#FFMPEGOPT=" -threads 0 -s 640x360 -r 29.97 -vcodec libx264 -preset fast -g 100 -crf 21 -bufsize 1024k -maxrate 768k -level 30 -sc_threshold 60 -refs 3 -async 50 -f h264 ${SRCDIR}/${FILEBODY}.264"
-#FFMPEGOPT=" -threads 0 -s 640x352 -r 29.97 -vcodec libx264 -preset fast -tune film -g 100 -crf 25 -bufsize 768k -maxrate 768k -level 30 -sc_threshold 60 -refs 3 -async 50 -f h264 ${SRCDIR}/${FILEBODY}.264"
-#FFMPEGOPT=" -threads 0 -s 640x352 -r 29.97 -vcodec libx264 -preset fast -tune animation -g 100 -crf 25 -bufsize 768k -maxrate 768k -level 30 -sc_threshold 60 -refs 3 -async 50 -f h264 ${SRCDIR}/${FILEBODY}.264"
-#FFMPEGOPT=" -threads 0 -s 640x352 -r 29.97 -vcodec libx264 -preset veryslow -g 100 -crf 25 -bufsize 768k -maxrate 768k -level 30 -sc_threshold 60 -refs 3 -async 50 -f h264 ${SRCDIR}/${FILEBODY}.264"
-#FFMPEGOPT=" -threads 0 -s 640x352 -r 29.97 -vcodec libx264 -preset placebo -g 100 -crf 25 -bufsize 768k -maxrate 768k -level 30 -sc_threshold 60 -refs 3 -async 50 -f h264 ${SRCDIR}/${FILEBODY}.264"
-
-#CROPOPT=' -vf crop=in_w-16:in_h-12:8:6 '
 CROPOPT=''
-SSTIME=''
-RESOLUTION=" -s 640x360 "
-MAXRATE=" -bufsize 1152K -maxrate 1152K "
-REFS=" -refs 13 "
-#PRESET=" -preset fast "
-PRESET=" -preset veryslow "
-#TUNE=" -tune film "
-TUNE=" -tune animation "
-CRF=" -crf 21 "
+#SSTIME="-ss 00:00:02.000"
+SSTIME=""
+THREADS="-threads 0"
+RESOLUTION="-s 640x360"
+ASPECT="-aspect 16:9"
+FRAMERATE="-r 30000/1001"
+MAXRATE="-bufsize 1152K -maxrate 1152K"
+REFS="-refs 13"
+#PRESET="-preset ultrafast"
+PRESET="-preset veryslow"
+#TUNE="-tune film"
+TUNE="-tune animation"
+CRF="-crf 22"
 #QCOMP=" -qcomp 0.7 "
 QCOMP=""
-#X264OPTS=" -x264opts me=umh:rc-lookahead=50:bframes=5 "
-X264OPTS=" -x264opts merange=32:no-dct-decimate "
-BENCH=" -ssim 1 -benchmark "
+X264OPTS="-x264opts merange=32:no-dct-decimate"
+VF="-vf yadif"
+AACOPT="-ac 2 -ar 48000 -vbr 4"
+#SYNC="-async 200"
+SYNC="-vsync 1"
+BENCH="-ssim 1 -benchmark"
+OUTPUTFILE="${SRCDIR}/${FILEBODY}.base.mp4"
 
-FFMPEGOPT=" $RESOLUTION -r 30000/1001 -vcodec libx264 $PRESET $TUNE -g 250 $CRF $MAXRATE $REFS $QCOMP $X264OPTS $BENCH -async 50 -vsync 1 -f h264 ${SRCDIR}/${FILEBODY}.264"
+FFMPEGOPT="$THREADS $RESOLUTION $ASPECT $FRAMERATE -f mp4
+  -vcodec libx264 $PRESET $CRF $MAXRATE $REFS $TUNE $QCOMP $X264OPTS $VF
+  -acodec libfdk_aac $AACOPT $SYNC $BENCH $OUTPUTFILE"
 
 # H.264 エンコード開始
 ENCSTARTDATE=`date '+%Y/%m/%d %H:%M:%S'`
-log_out "ffmpeg $SPLITFILE 264 start."
-log_out "$FFMPEG -y -i $SPLITFILE $CROPOPT $SSTIME $FFMPEGOPT"
-nice -n 15 $FFMPEG -y -i "$SPLITFILE" $CROPOPT $SSTIME $FFMPEGOPT
+log_out "ffmpeg $SPLITFILE 264<mp4> start."
+FFMPEGEXEC="nice -n 15 $FFMPEG -y -i \"$SPLITFILE\" $CROPOPT $SSTIME $FFMPEGOPT"
+log_out "$FFMPEGEXEC"
+eval $FFMPEGEXEC
 RET=$?
-log_out "ffmpeg $SPLITFILE 264 end :$RET"
+log_out "ffmpeg $SPLITFILE 264<mp4> end :$RET"
 
 ## エラーになってたらcrop止めてみる。
-#if [ ! -e "${SRCDIR}/${FILEBODY}.264" ]; then
-#   log_out "ffmpeg no crop $SPLITFILE 264 start."
-#   log_out "$FFMPEG -y -i $SPLITFILE $SSTIME $FFMPEGOPT"
-#   nice -n 15 $FFMPEG -y -i "$SPLITFILE" $SSTIME $FFMPEGOPT
-#   RET=$?
-#   log_out "ffmpeg no crop $SPLITFILE 264 end :$RET"
+#if [ ! -e "$OUTPUTFILE" ]; then
+#    log_out "ffmpeg no crop $SPLITFILE 264<mp4> start."
+#    FFMPEGEXEC="nice -n 15 $FFMPEG -y -i \"$SPLITFILE\" $SSTIME $FFMPEGOPT"
+#    log_out "$FFMPEGEXEC"
+#    eval $FFMPEGEXEC
+#    RET=$?
+#    log_out "ffmpeg no crop $SPLITFILE 264<mp4> end :$RET"
 #fi
 
 # それでもエラーならsplitしてないファイルをターゲットに
-if [ ! -e "${SRCDIR}/${FILEBODY}.264" ]; then
-    SPLITFILE="$INFILE"
-    #SSTIME=' -ss 00:00:02.000 ';
-    SSTIME='';
-
-    log_out "ffmpeg no splited ts $SPLITFILE 264 start."
-    log_out "$FFMPEG -y -i $SPLITFILE $SSTIME $FFMPEGOPT"
-    nice -n 15 $FFMPEG -y -i "$SPLITFILE" $SSTIME $FFMPEGOPT
-    RET=$?
-    log_out "ffmpeg no splited ts  $SPLITFILE 264 end :$RET"
-fi
+#if [ ! -e "$OUTPUTFILE" ]; then
+#    SPLITFILE="$INFILE"
+#    SSTIME='';
+#
+#    log_out "ffmpeg no splited ts $SPLITFILE 264<mp4> start."
+#    FFMPEGEXEC="nice -n 15 $FFMPEG -y -i \"$SPLITFILE\" $SSTIME $FFMPEGOPT"
+#    log_out "$FFMPEGEXEC"
+#    eval $FFMPEGEXEC
+#    RET=$?
+#    log_out "ffmpeg no splited ts  $SPLITFILE 264<mp4> end :$RET"
+#fi
 
 # 終わり
-if [ ! -e "${SRCDIR}/${FILEBODY}.264" ]; then
+if [ ! -e "$OUTPUTFILE" ]; then
     log_out "ffmpeg err."
     exit 6
 else
-    log_out "H.264 encode file"
-    log_out "`ls -lh ${SRCDIR}/${FILEBODY}.264`"
+    log_out "H.264<mp4> encode file"
+    log_out "`ls -lh $OUTPUTFILE`"
+    log_out ""
 fi
 ENCENDDATE=`date '+%Y/%m/%d %H:%M:%S'`
 
-# 存在してたら消す
 AACSTARTDATE=`date '+%Y/%m/%d %H:%M:%S'`
-if [ -e "${SRCDIR}/${FILEBODY}.aac" ]; then
-    rm -f "${SRCDIR}/${FILEBODY}.aac"
-fi
-if [ -e "${SRCDIR}/${FILEBODY}.wav" ]; then
-    rm -f "${SRCDIR}/${FILEBODY}.wav"
-fi
+# 存在してたら消す
+#if [ -e "${SRCDIR}/${FILEBODY}.aac" ]; then
+#    rm -f "${SRCDIR}/${FILEBODY}.aac"
+#fi
+#if [ -e "${SRCDIR}/${FILEBODY}.wav" ]; then
+#    rm -f "${SRCDIR}/${FILEBODY}.wav"
+#fi
 
 # splitしてないファイルがターゲットだったらwav抽出
-if [ "$SPLITFILE" = "$INFILE" ]; then
-  # TS -> WAV抽出
-  log_out "ffmpeg ts -> wav $SPLITFILE start."
-  log_out "$FFMPEG -i $SPLITFILE $SSTIME -map 0:1 -vn -acodec pcm_s16le -ac 2 ${SRCDIR}/${FILEBODY}.wav"
-  nice -n 15 $FFMPEG -i "$SPLITFILE" $SSTIME -map 0:1 -vn -acodec pcm_s16le -ac 2 "${SRCDIR}/${FILEBODY}.wav"
-  RET=$?
-  log_out "ffmpeg aac -> wav $SPLITFILE end. :$RET"
+#if [ "$SPLITFILE" = "$INFILE" ]; then
+#  # TS -> WAV抽出
+#  log_out "ffmpeg ts -> wav $SPLITFILE start."
+#  log_out "$FFMPEG -i $SPLITFILE $SSTIME -map 0:1 -vn -acodec pcm_s16le -ac 2 ${SRCDIR}/${FILEBODY}.wav"
+#  nice -n 15 $FFMPEG -i "$SPLITFILE" $SSTIME -map 0:1 -vn -acodec pcm_s16le -ac 2 "${SRCDIR}/${FILEBODY}.wav"
+#  RET=$?
+#  log_out "ffmpeg aac -> wav $SPLITFILE end. :$RET"
+#
+#  EXTWAV="${SRCDIR}/${FILEBODY}.wav"
+#
+#  ## 失敗してたらmplayerで試してみる
+#  #if [ ! -e "${SRCDIR}/${FILEBODY}.wav" ]; then
+#  # log_out "mplayer aac -> wav start."
+#  # log_out "$MPLAYER $SPLITFILE -vc null -vo null -ao pcm:file=${SRCDIR}/${FILEBODY}.wav:fast"
+#  # nice -n 15 $MPLAYER "$SPLITFILE" -vc null -vo null -ao "pcm:file=${SRCDIR}/${FILEBODY}.wav:fast"
+#  # RET=$?
+#  # log_out "mplayer aac -> wav end. :$RET"
+#  #fi
+#else
+#  EXTWAV="${SPWAV}"
+#fi
 
-  EXTWAV="${SRCDIR}/${FILEBODY}.wav"
-
-  ## 失敗してたらmplayerで試してみる
-  #if [ ! -e "${SRCDIR}/${FILEBODY}.wav" ]; then
-  # log_out "mplayer aac -> wav start."
-  # log_out "$MPLAYER $SPLITFILE -vc null -vo null -ao pcm:file=${SRCDIR}/${FILEBODY}.wav:fast"
-  # nice -n 15 $MPLAYER "$SPLITFILE" -vc null -vo null -ao "pcm:file=${SRCDIR}/${FILEBODY}.wav:fast"
-  # RET=$?
-  # log_out "mplayer aac -> wav end. :$RET"
-  #fi
-else
-  EXTWAV="${SPWAV}"
-fi
-
-if [ -e $EXTWAV ]; then
-  log_out "EXTWAV = $EXTWAV"
-  log_out "`ls -lh $EXTWAV`"
-else
-  log_out "extract wav not exist."
-  exit 7
-fi
+#if [ -e $EXTWAV ]; then
+#  log_out "EXTWAV = $EXTWAV"
+#  log_out "`ls -lh $EXTWAV`"
+#else
+#  log_out "extract wav not exist."
+#  exit 7
+#fi
 
 #log_out "ffmpeg aac $SPLITFILE start."
 #log_out "$FFMPEG -i $SPLITFILE $SSTIME -map 0:1 -vn -acodec copy ${SRCDIR}/${FILEBODY}.aac"
@@ -527,12 +534,12 @@ fi
 #if [ -e "${SRCDIR}/${FILEBODY}.aac" ]; then
 #   rm -f "${SRCDIR}/${FILEBODY}.aac"
 #fi
-log_out "neroAacEnc wav -> aac start."
-log_out "$NEROAACENC -q 0.4 -hev2 -if ${EXTWAV} -of ${SRCDIR}/${FILEBODY}.aac"
-#$NEROAACENC -br 128000 -if "${SRCDIR}/${FILEBODY}.wav" -of "${SRCDIR}/${FILEBODY}.aac"
-nice -n 15 $NEROAACENC -q 0.4 -hev2 -if "${EXTWAV}" -of "${SRCDIR}/${FILEBODY}.aac"
-RET=$?
-log_out "neroAacEnc wav -> aac end. :$RET"
+#log_out "neroAacEnc wav -> aac start."
+#log_out "$NEROAACENC -q 0.4 -hev2 -if ${EXTWAV} -of ${SRCDIR}/${FILEBODY}.aac"
+##$NEROAACENC -br 128000 -if "${SRCDIR}/${FILEBODY}.wav" -of "${SRCDIR}/${FILEBODY}.aac"
+#nice -n 15 $NEROAACENC -q 0.4 -hev2 -if "${EXTWAV}" -of "${SRCDIR}/${FILEBODY}.aac"
+#RET=$?
+#log_out "neroAacEnc wav -> aac end. :$RET"
 
 ## 失敗してたらfaacで試してみる
 #if [ ! -e "${SRCDIR}/${FILEBODY}.aac" ]; then
@@ -544,53 +551,55 @@ log_out "neroAacEnc wav -> aac end. :$RET"
 #fi
 
 # 終わり
-if [ ! -e "${SRCDIR}/${FILEBODY}.aac" ]; then
-    log_out "wav -> aac err."
-    exit 7
-else
-    log_out "wav -> aac file"
-    log_out "`ls -lh ${SRCDIR}/${FILEBODY}.aac`"
-fi
+#if [ ! -e "${SRCDIR}/${FILEBODY}.aac" ]; then
+#    log_out "wav -> aac err."
+#    exit 7
+#else
+#    log_out "wav -> aac file"
+#    log_out "`ls -lh ${SRCDIR}/${FILEBODY}.aac`"
+#fi
 AACENDDATE=`date '+%Y/%m/%d %H:%M:%S'`
 
 # MP4 mux 264
 MUXSTARTDATE=`date '+%Y/%m/%d %H:%M:%S'`
-log_out "MP4Box -add 264 -new ${SRCDIR}/${FILEBODY}.base.mp4  start."
-log_out "$MP4BOX -tmp /tmp -fps 29.97 -add ${SRCDIR}/${FILEBODY}.264 -new ${SRCDIR}/${FILEBODY}.base.mp4"
-nice -n 15 $MP4BOX -tmp /tmp -fps 29.97 -add "${SRCDIR}/${FILEBODY}.264" -new "${SRCDIR}/${FILEBODY}.base.mp4"
-RET=$?
-log_out "MP4Box -add 264 -new ${SRCDIR}/${FILEBODY}.base.mp4  end. :$RET"
-
-if [ ! -e "${SRCDIR}/${FILEBODY}.base.mp4" ]; then
-    log_out "MP4Box 264 add err."
-    exit 7
-else
-    log_out "mp4 add 264"
-    log_out "`ls -lh ${SRCDIR}/${FILEBODY}.base.mp4`"
-fi
+#log_out "MP4Box -add 264 -new ${SRCDIR}/${FILEBODY}.base.mp4  start."
+#log_out "$MP4BOX -tmp /tmp -fps 29.97 -add ${SRCDIR}/${FILEBODY}.264 -new ${SRCDIR}/${FILEBODY}.base.mp4"
+#nice -n 15 $MP4BOX -tmp /tmp -fps 29.97 -add "${SRCDIR}/${FILEBODY}.264" -new "${SRCDIR}/${FILEBODY}.base.mp4"
+#RET=$?
+#log_out "MP4Box -add 264 -new ${SRCDIR}/${FILEBODY}.base.mp4  end. :$RET"
+#
+#if [ ! -e "${SRCDIR}/${FILEBODY}.base.mp4" ]; then
+#    log_out "MP4Box 264 add err."
+#    exit 7
+#else
+#    log_out "mp4 add 264"
+#    log_out "`ls -lh ${SRCDIR}/${FILEBODY}.base.mp4`"
+#fi
 
 # MP4 mux aac
-log_out "MP4Box -add aac ${SRCDIR}/${FILEBODY}.base.mp4  start."
-log_out "$MP4BOX -tmp /tmp -add ${SRCDIR}/${FILEBODY}.aac ${SRCDIR}/${FILEBODY}.base.mp4"
-nice -n 15 $MP4BOX -tmp /tmp -add "${SRCDIR}/${FILEBODY}.aac" "${SRCDIR}/${FILEBODY}.base.mp4"
-RET=$?
-log_out "MP4Box -add aac ${SRCDIR}/${FILEBODY}.base.mp4  end. :$RET"
-log_out "`ls -lh ${SRCDIR}/${FILEBODY}.base.mp4`"
+#log_out "MP4Box -add aac ${SRCDIR}/${FILEBODY}.base.mp4  start."
+#log_out "$MP4BOX -tmp /tmp -add ${SRCDIR}/${FILEBODY}.aac ${SRCDIR}/${FILEBODY}.base.mp4"
+#nice -n 15 $MP4BOX -tmp /tmp -add "${SRCDIR}/${FILEBODY}.aac" "${SRCDIR}/${FILEBODY}.base.mp4"
+#RET=$?
+#log_out "MP4Box -add aac ${SRCDIR}/${FILEBODY}.base.mp4  end. :$RET"
+#log_out "`ls -lh ${SRCDIR}/${FILEBODY}.base.mp4`"
 
 # iPodヘッダ付加
-log_out "MP4Box -ipod ${SRCDIR}/${FILEBODY}.base.mp4"
-log_out "$MP4BOX -tmp /tmp -ipod ${SRCDIR}/${FILEBODY}.base.mp4"
-nice -n 15 $MP4BOX -tmp /tmp -ipod "${SRCDIR}/${FILEBODY}.base.mp4"
-log_out "`ls -lh ${SRCDIR}/${FILEBODY}.base.mp4`"
+#log_out "MP4Box -ipod $OUTPUTFILE"
+#log_out "$MP4BOX -tmp /tmp -ipod $OUTPUTFILE"
+#nice -n 15 $MP4BOX -tmp /tmp -ipod "$OUTPUTFILE"
+#log_out "`ls -lh $OUTPUTFILE`"
+#log_out ""
 MUXENDDATE=`date '+%Y/%m/%d %H:%M:%S'`
 
 # rename  base.mp4 -> .MP4
 if [ -e "${SRCDIR}/${FILEBODY}.MP4" ]; then
     rm -f "${SRCDIR}/${FILEBODY}.MP4"
 fi
-log_out "mv ${SRCDIR}/${FILEBODY}.base.mp4 ${SRCDIR}/${FILEBODY}.MP4"
-mv "${SRCDIR}/${FILEBODY}.base.mp4" "${SRCDIR}/${FILEBODY}.MP4"
+log_out "mv $OUTPUTFILE ${SRCDIR}/${FILEBODY}.MP4"
+mv "$OUTPUTFILE" "${SRCDIR}/${FILEBODY}.MP4"
 log_out "`ls -lh ${SRCDIR}/${FILEBODY}.MP4`"
+log_out ""
 
 # サムネイル作成
 THUSTARTDATE=`date '+%Y/%m/%d %H:%M:%S'`
@@ -621,14 +630,14 @@ THUTIME=`perl -e "printf(\"%02d:%02d:%02d\", int($THUSEC/3600), int($THUSEC%3600
 
 INFILESIZE=`ls -lh "$INFILE"    | awk {'print $5'}`
 SPFILESIZE=`ls -lh "$SPLITFILE" | awk {'print $5'}`
-EXTWAVSIZE=`ls -lh "$EXTWAV"    | awk {'print $5'}`
-VIFILESIZE=`ls -lh "${SRCDIR}/${FILEBODY}.264" | awk {'print $5'}`
-AUFILESIZE=`ls -lh "${SRCDIR}/${FILEBODY}.aac" | awk {'print $5'}`
+#EXTWAVSIZE=`ls -lh "$EXTWAV"    | awk {'print $5'}`
+#VIFILESIZE=`ls -lh "${SRCDIR}/${FILEBODY}.264" | awk {'print $5'}`
+#AUFILESIZE=`ls -lh "${SRCDIR}/${FILEBODY}.aac" | awk {'print $5'}`
 M4FILESIZE=`ls -lh "${SRCDIR}/${FILEBODY}.MP4" | awk {'print $5'}`
 THMDIRSIZE=`du -sh "${SRCDIR}/${FILEBODY}_img" | awk '{print $1}'`
 THCOUNT=`ls -1 "${SRCDIR}/${FILEBODY}_img/" | wc -l`
 COMP=`perl -e "\\$ts = -s \"$INFILE\"; \\$mp4 = -s \"${SRCDIR}/${FILEBODY}.MP4\"; printf(\"%s\n\", int(\\$mp4 / \\$ts * 100 * 100) / 100);"`
-COMPP=`perl -e "print int($COMP * 100)"`
+COMPP=`perl -e "print int($COMP * 100);"`
 
 SUCCESS=1
 if [ $COMPP -ge $SUCCESS_SIZE ]; then
@@ -640,9 +649,9 @@ log_out ""
 log_out "=========================== TS to MP4 ENCODE RESULT ==========================="
 log_out "  TS    FILE      : `printf '%06s' $INFILESIZE` : $INFILE"
 log_out "  SPLIT FILE      : `printf '%06s' $SPFILESIZE` : $SPLITFILE"
-log_out "  EXT WAV FILE    : `printf '%06s' $EXTWAVSIZE` : $EXTWAV"
-log_out "  VIDEO FILE      : `printf '%06s' $VIFILESIZE` : ${SRCDIR}/${FILEBODY}.264"
-log_out "  AUDIO FILE      : `printf '%06s' $AUFILESIZE` : ${SRCDIR}/${FILEBODY}.aac"
+#log_out "  EXT WAV FILE    : `printf '%06s' $EXTWAVSIZE` : $EXTWAV"
+#log_out "  VIDEO FILE      : `printf '%06s' $VIFILESIZE` : ${SRCDIR}/${FILEBODY}.264"
+#log_out "  AUDIO FILE      : `printf '%06s' $AUFILESIZE` : ${SRCDIR}/${FILEBODY}.aac"
 log_out "  MP4   FILE      : `printf '%06s' $M4FILESIZE` : ${SRCDIR}/${FILEBODY}.MP4"
 log_out "  THUMBNAIL DIR   : `printf '%06s' $THMDIRSIZE` : ${THCOUNT} files : ${SRCDIR}/${FILEBODY}_img"
 log_out "  COMPRESSION RATE: `printf '%06s' $COMP`%"
@@ -651,8 +660,8 @@ log_out "  END     TIME    : ${ENDDATE}"
 log_out "  PROCESS TIME    : ${PROCESS}"
 log_out "    SP TIME       : ${SPTIME}"
 log_out "    ENC TIME      : ${ENCTIME}"
-log_out "    AAC TIME      : ${AACTIME}"
-log_out "    MUX TIME      : ${MUXTIME}"
+#log_out "    AAC TIME      : ${AACTIME}"
+#log_out "    MUX TIME      : ${MUXTIME}"
 log_out "    THU TIME      : ${THUTIME}"
 log_out "=========================== TS to MP4 ENCODE RESULT ==========================="
 log_out ""
